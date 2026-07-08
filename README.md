@@ -24,7 +24,7 @@ I built this entirely on personal initiative. Automation is not part of my job d
 
 ## How It Works
 
-Student interns submit timesheets in Banner/Student Information System (SIS). Banner sends a notification email to the shared payroll mailbox. ApprovalFlow intercepts that email, extracts the student's information from the HTML body, looks up the assigned supervisor from a roster in Excel, and forwards a formatted approval request to the supervisor — all within 60 seconds of submission.
+Student interns submit timesheets in Banner/Student Information System (SIS). Banner sends a notification email to the shared payroll mailbox. ApprovalFlow intercepts that email, extracts the student's information from the HTML body, looks up the assigned supervisor from a roster in Excel, and forwards a formatted approval request to the supervisor, all within 60 seconds of submission.
 
 Supervisors reply with `APPROVE`, `REJECT`, or `CORRECTIONS`. The system reads those replies, matches them back to the correct student record, logs the result, and updates a color-coded dashboard.
 
