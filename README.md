@@ -14,11 +14,13 @@ I built this entirely on personal initiative. Automation is not part of my job d
 
 | Metric |	Before |	After |
 |--------|---------|--------|
-| Processing time per pay period |	32 hours |	12 hours |
-| Time reduction |	—	| 62.5% |
-| Hours saved annually |	—	| 480 hours |
+| Processing time per pay period |	32 hours |	8 hours |
+| Time reduction |	—	| 75% |
+| Hours saved annually |	—	| 560 hours |
 | Automated emails per pay period |	0	| 200–300 |
 | Manual tracking errors |	Frequent |	Near zero |
+
+**This is the original VBA implementation.** The active Python rebuild, with database-backed storage and OAuth2 email integration replacing Excel and Outlook, is in progress at [approvalflow-python](https://github.com/aprie06/approvalflow-python).
 
 ---
 
@@ -110,6 +112,7 @@ HR approves verified timesheets in the SIS -> payroll processes automatically
 2. Banner notifications arriving in `Student_Time_Sheet` are processed automatically by `MoveItems`
 3. Supervisor replies arriving in the shared mailbox Inbox are processed automatically by `ProcessSupervisorReplies`
 4. Run `RunSmartReminders` daily to send deadline-appropriate follow-ups
+   
 **End of period**
 1. Run `DeduplicateSentLog`, then close the workbook
 2. Run `DeduplicateReplyLog`, then close the workbook
