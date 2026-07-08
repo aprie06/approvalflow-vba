@@ -126,8 +126,28 @@ HR approves verified timesheets in the SIS -> payroll processes automatically
 ## Known Issues and Fixes Applied
  
 This section documents every significant bug encountered in production and how it was resolved. This is the primary reference for anyone inheriting or maintaining the system.
+
+### Summary
  
-### Silent failure: no emails forwarded, no log entries, no errors
+| # | Issue | Category | Severity |
+|---|---|---|---|
+| 1 | [Silent failure: no emails forwarded, no errors](#silent-failure-no-emails-forwarded-no-log-entries-no-errors) | Data Integrity | High |
+| 2 | [Office update broke external email delivery](#office-update-broke-external-email-delivery) | Email Delivery | High |
+| 3 | [Exchange DNs returned instead of SMTP addresses](#internal-supervisors-returned-exchange-distinguished-names-instead-of-smtp-addresses) | Email Delivery | Medium |
+| 4 | [Supervisor replies mismatched across multiple students](#supervisor-replies-mismatched-when-supervisor-manages-multiple-students) | Reply Matching | Medium |
+| 5 | [isReply gate silently dropped valid approvals](#isreply-gate-silently-dropped-valid-approval-emails) | Reply Matching | High |
+| 6 | [Approvals misclassified as REJECTED](#determineresponsetype-misclassified-approvals-as-rejected) | Reply Matching | High |
+| 7 | [Submission_Tracking silent append caused 2x overcounting](#populatesubmissiontracking-silent-append-bug-caused-2x-row-overcounting) | Data Integrity | Critical |
+| 8 | [Deadline-day timesheets dropped from Sent_Log](#fastrebuildsentlog-dropped-valid-timesheets-submitted-on-deadline-day) | Data Integrity | High |
+| 9 | [Prior-period replies matched to current-period submissions](#date-mismatch-prior-period-approvals-matched-to-current-period-submissions) | Data Integrity | Medium |
+| 10 | [Outlook froze during FastRebuildSentLog](#outlook-freeze-during-fastrebuildsentlog) | Performance | Medium |
+| 11 | [Hardcoded username paths break under other accounts](#hardcoded-username-paths-will-break-under-a-different-windows-account) | Maintainability | Low (future risk) |
+ 
+---
+ 
+### Data Integrity
+ 
+#### Silent failure: no emails forwarded, no log entries, no errors
  
 **Root cause:** Cell J1 on `Updated_Supervisor email` holds a stale prior pay period date. All incoming Banner notifications fail the pay period date guard silently, no error is raised, nothing is logged.
  
@@ -135,47 +155,7 @@ This section documents every significant bug encountered in production and how i
  
 *This is the most common failure mode in the system.*
  
-### Office update broke external email delivery
- 
-**Symptom:** Forwarded emails appeared to send but were never delivered to external supervisor addresses after a Microsoft 365 update.
- 
-**Root cause:** The Office update changed how Outlook VBA resolves recipient addresses for external domains. `forwardItem.Send` was being called before recipients were resolved.
- 
-**Fix:** Added `forwardItem.Recipients.ResolveAll` immediately before `forwardItem.Send` in `MoveItems`.
- 
-### Internal supervisors returned Exchange Distinguished Names instead of SMTP addresses
- 
-**Symptom:** Supervisor email matching failed for all `@district.edu` supervisors. Logged addresses showed Exchange DN strings (`/O=EXCHANGELABS/...`) instead of real email addresses.
- 
-**Root cause:** `oMail.SenderEmailAddress` returns the Exchange Distinguished Name for internal Exchange users, not their SMTP address.
- 
-**Fix:** Added `GetSMTPAddress` helper function using `oMail.Sender.GetExchangeUser.PrimarySmtpAddress` to resolve Exchange users to their real SMTP address. Falls back to `SenderEmailAddress` for external senders.
- 
-### Supervisor replies mismatched when supervisor manages multiple students
- 
-**Symptom:** All replies from a supervisor who oversees multiple students were matched to the same student, leaving the others unmatched.
- 
-**Root cause:** The matching algorithm weighted reply time proximity too heavily. The first student in the Sent_Log for that supervisor always scored highest.
- 
-**Fix:** Reweighted the scoring logic: name match score is weighted at 2, time proximity score is capped at 1. Name match now dominates. CC-based matching (extracting the student's `@district.edu` address from the reply CC field and matching to Sent_Log column 6) was added as the primary strategy; supervisor email plus name scoring became the fallback.
- 
-### isReply gate silently dropped valid approval emails
- 
-**Symptom:** Some supervisor replies were never logged. No error, no log entry.
- 
-**Root cause:** `isReply` required the subject line to contain keywords ("Timesheet", "Internship Program Name", "Approval") in addition to body keywords. Replies forwarded through certain email clients had modified subjects that stripped these keywords.
- 
-**Fix:** Removed subject keyword requirement from `isReply`. Detection now relies on body keywords (APPROVE, REJECT, CORRECTIONS) only.
- 
-### DetermineResponseType misclassified approvals as REJECTED
- 
-**Symptom:** Supervisor replies containing "APPROVE" were logged as REJECTED.
- 
-**Root cause:** The forwarded approval request email (quoted in the reply body) contained the word "REJECTED" in the instructions section ("If the hours are incorrect, reply with REJECTED"). The function was scanning the full email body including quoted content.
- 
-**Fix:** Strip quoted content from the reply body before keyword matching. Quoted content is identified by separators: "From:", a line of underscores, "-----Original Message-----", "Sent:", or "On [date]".
- 
-### PopulateSubmissionTracking silent append bug caused 2x row overcounting
+#### PopulateSubmissionTracking silent append bug caused 2x row overcounting
  
 **Symptom:** `Submission_Tracking` showed 368 rows when the correct student count was 181.
  
@@ -185,7 +165,7 @@ This section documents every significant bug encountered in production and how i
  
 > **This is the system's most dangerous silent data corruption risk. PopulateSubmissionTracking must always clear before repopulating, never append.**
  
-### FastRebuildSentLog dropped valid timesheets submitted on deadline day
+#### FastRebuildSentLog dropped valid timesheets submitted on deadline day
  
 **Symptom:** FastRebuildSentLog returned 115 records when the correct count was 179. Timesheets submitted on the last day of the pay period were missing.
  
@@ -193,7 +173,7 @@ This section documents every significant bug encountered in production and how i
  
 **Fix:** Removed the Banner status date filter entirely. All emails in `Sent_super` are now processed without date filtering.
  
-### Date mismatch: prior period approvals matched to current period submissions
+#### Date mismatch: prior period approvals matched to current period submissions
  
 **Symptom:** Dashboard showed entries like "Submitted 4/15, Approved 4/1", logically impossible.
  
@@ -201,7 +181,59 @@ This section documents every significant bug encountered in production and how i
  
 **Fix:** Added a date guard inside the `For sentRow` loop in `LogSupervisorReply` that skips any reply email with a received date earlier than `GetPayPeriodStartDate()`. `GetPayPeriodStartDate` reads from J1 on `Updated_Supervisor email`.
  
-### Outlook freeze during FastRebuildSentLog
+---
+ 
+### Email Delivery
+ 
+#### Office update broke external email delivery
+ 
+**Symptom:** Forwarded emails appeared to send but were never delivered to external supervisor addresses after a Microsoft 365 update.
+ 
+**Root cause:** The Office update changed how Outlook VBA resolves recipient addresses for external domains. `forwardItem.Send` was being called before recipients were resolved.
+ 
+**Fix:** Added `forwardItem.Recipients.ResolveAll` immediately before `forwardItem.Send` in `MoveItems`.
+ 
+#### Internal supervisors returned Exchange Distinguished Names instead of SMTP addresses
+ 
+**Symptom:** Supervisor email matching failed for all `@district.edu` supervisors. Logged addresses showed Exchange DN strings (`/O=EXCHANGELABS/...`) instead of real email addresses.
+ 
+**Root cause:** `oMail.SenderEmailAddress` returns the Exchange Distinguished Name for internal Exchange users, not their SMTP address.
+ 
+**Fix:** Added `GetSMTPAddress` helper function using `oMail.Sender.GetExchangeUser.PrimarySmtpAddress` to resolve Exchange users to their real SMTP address. Falls back to `SenderEmailAddress` for external senders.
+ 
+---
+ 
+### Reply Matching
+ 
+#### Supervisor replies mismatched when supervisor manages multiple students
+ 
+**Symptom:** All replies from a supervisor who oversees multiple students were matched to the same student, leaving the others unmatched.
+ 
+**Root cause:** The matching algorithm weighted reply time proximity too heavily. The first student in the Sent_Log for that supervisor always scored highest.
+ 
+**Fix:** Reweighted the scoring logic: name match score is weighted at 2, time proximity score is capped at 1. Name match now dominates. CC-based matching (extracting the student's `@district.edu` address from the reply CC field and matching to Sent_Log column 6) was added as the primary strategy; supervisor email plus name scoring became the fallback.
+ 
+#### isReply gate silently dropped valid approval emails
+ 
+**Symptom:** Some supervisor replies were never logged. No error, no log entry.
+ 
+**Root cause:** `isReply` required the subject line to contain keywords ("Timesheet", "Internship Program Name", "Approval") in addition to body keywords. Replies forwarded through certain email clients had modified subjects that stripped these keywords.
+ 
+**Fix:** Removed subject keyword requirement from `isReply`. Detection now relies on body keywords (APPROVE, REJECT, CORRECTIONS) only.
+ 
+#### DetermineResponseType misclassified approvals as REJECTED
+ 
+**Symptom:** Supervisor replies containing "APPROVE" were logged as REJECTED.
+ 
+**Root cause:** The forwarded approval request email (quoted in the reply body) contained the word "REJECTED" in the instructions section ("If the hours are incorrect, reply with REJECTED"). The function was scanning the full email body including quoted content.
+ 
+**Fix:** Strip quoted content from the reply body before keyword matching. Quoted content is identified by separators: "From:", a line of underscores, "-----Original Message-----", "Sent:", or "On [date]".
+ 
+---
+ 
+### Performance
+ 
+#### Outlook freeze during FastRebuildSentLog
  
 **Symptom:** Outlook froze and became unresponsive when FastRebuildSentLog processed more than a few dozen emails.
  
@@ -209,7 +241,11 @@ This section documents every significant bug encountered in production and how i
  
 **Fix:** Replaced MSHTML DOM parsing with a plain string `ExtractEmailFromHTMLBody` function that counts `<td>` elements using string operations. A single batch array write (`Resize(resultCount, 8).Value = results`) replaced cell-by-cell writes inside the loop.
  
-### Hardcoded username paths will break under a different Windows account
+---
+ 
+### Maintainability
+ 
+#### Hardcoded username paths will break under a different Windows account
  
 **Symptom (future risk):** `ArchivePayPeriodWorkbook` and `ViewArchivedPayPeriods` contain hardcoded paths using `ApprovalFlow_Admin` as the username. These will fail when the system is handed off to a successor with a different Windows account.
  
@@ -239,4 +275,3 @@ These rules exist because each one was learned from a production incident.
 | **Development period** | January 2024 to present |
 | **Languages / tools** | Outlook VBA, Excel VBA, MSHTML, Banner (Ellucian) via HRIS SQL queries |
 | **All subsequent development, logic, debugging, and enhancements** | aprie06 |
- 
