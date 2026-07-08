@@ -16,7 +16,7 @@ I built this entirely on personal initiative. Automation is not part of my job d
 |--------|---------|--------|
 | Processing time per pay period |	32 hours |	8 hours |
 | Time reduction |	—	| 75% |
-| Hours saved annually |	—	| 560 hours |
+| Hours saved annually |	—	| 576 hours |
 | Automated emails per pay period |	0	| 200–300 |
 | Manual tracking errors |	Frequent |	Near zero |
 
