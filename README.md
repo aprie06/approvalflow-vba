@@ -4,7 +4,7 @@ ApprovalFlow
 
 **Automated intern timesheet approval system built in Outlook VBA and Excel**
 
-ApprovalFlow is a production automation system I built for an internship program hosted at community colleges. The program manages 200 student interns placed at 85+ off-site employer organizations on a semi-monthly payroll schedule. Before this system existed, one HR staff member (me) was manually tracking down supervisor approvals across every pay period — a process that consumed 4 of every 5 working days.
+ApprovalFlow is a production automation system I built for an internship program hosted at community colleges. The program manages 200 student interns placed at 85+ off-site employer organizations on a semi-monthly payroll schedule. Before this system existed, one HR staff member (me) was manually tracking down supervisor approvals across every pay period, a process that consumed 4 of every 5 working days.
 
 I built this entirely on personal initiative. Automation is not part of my job description.
 
