@@ -4,7 +4,7 @@ ApprovalFlow
 
 **Automated intern timesheet approval system built in Outlook VBA and Excel**
 
-ApprovalFlow is a production automation system I built for an internship program hosted at community colleges. The program manages 200 student interns placed at 85+ off-site employer organizations on a semi-monthly payroll schedule. Before this system existed, one HR staff member (me) was manually tracking down supervisor approvals across every pay period, a process that consumed 4 of every 5 working days.
+ApprovalFlow is a production automation system I built for an internship program hosted at community colleges. The program manages 200 student interns placed at 85+ off-site employer organizations on a semi-monthly pay schedule. Before this system existed, one HR staff member (me) was manually tracking down supervisor approvals across every pay period, a process that consumed 4 of every 5 working days.
 
 I built this entirely on personal initiative. Automation is not part of my job description.
 
@@ -26,7 +26,7 @@ I built this entirely on personal initiative. Automation is not part of my job d
 
 ## How It Works
 
-Student interns submit timesheets in Banner/Student Information System (SIS). Banner sends a notification email to the shared payroll mailbox. ApprovalFlow intercepts that email, extracts the student's information from the HTML body, looks up the assigned supervisor from a roster in Excel, and forwards a formatted approval request to the supervisor, all within 60 seconds of submission.
+Student interns submit timesheets in Banner/Student Information System (SIS). Banner sends a notification email to the shared timesheet mailbox. ApprovalFlow intercepts that email, extracts the student's information from the HTML body, looks up the assigned supervisor from a roster in Excel, and forwards a formatted approval request to the supervisor, all within 60 seconds of submission.
 
 Supervisors reply with `APPROVE`, `REJECT`, or `CORRECTIONS`. The system reads those replies, matches them back to the correct student record, logs the result, and updates a color-coded dashboard.
 
